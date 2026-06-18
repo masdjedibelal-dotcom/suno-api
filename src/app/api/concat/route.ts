@@ -3,6 +3,8 @@ import { cookies } from 'next/headers'
 import { sunoApi } from "@/lib/SunoApi";
 import { corsHeaders } from "@/lib/utils";
 
+// Diese Zeile zwingt Netlify, die Route als Edge-Funktion zu bauen, wodurch der fehlerhafte Webpack-Bundle-Schritt übersprungen wird
+export const runtime = "edge"; 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
