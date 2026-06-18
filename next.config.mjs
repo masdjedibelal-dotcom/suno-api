@@ -10,6 +10,16 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  experimental: {
+    // Verhindert, dass Webpack diese serverseitigen Pakete bündelt.
+    // rebrowser-playwright-core enthält Binärdateien (.ttf, .html) in seinen
+    // Recorder-Assets, die Webpack nicht parsen kann und den Build zum Absturz bringen.
+    serverComponentsExternalPackages: [
+      'rebrowser-playwright-core',
+      'ghost-cursor-playwright',
+    ],
+  },
+
   webpack: (config, { isServer }) => {
     if (isServer) {
       // Verhindert, dass Webpack Module-IDs in Nummern umwandelt
@@ -31,4 +41,4 @@ const nextConfig = {
   output: 'standalone',
 };
 
-module.exports = nextConfig;
+export default nextConfig;
