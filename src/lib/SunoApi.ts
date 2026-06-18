@@ -132,8 +132,14 @@ class SunoApi {
 
   public async init(): Promise<SunoApi> {
     //await this.getClerkLatestVersion();
-    await this.getAuthToken();
-    await this.keepAlive();
+    if (this.cookies.__session && this.cookies.__session.length > 100) {
+      logger.info('Using existing __session token from cookies');
+      this.currentToken = this.cookies.__session;
+      this.sid = 'direct_jwt_session';
+    } else {
+      await this.getAuthToken();
+      await this.keepAlive();
+    }
     return this;
   }
 
@@ -167,13 +173,18 @@ class SunoApi {
     const sessionResponse = await this.client.get(getSessionUrl, {
       headers: { Authorization: this.cookies.__client }
     });
-    if (!sessionResponse?.data?.response?.last_active_session_id) {
+    const response = sessionResponse?.data?.response;
+    const sessionId =
+      response?.last_active_session_id ??
+      response?.sessions?.[0]?.id;
+
+    if (!sessionId) {
       throw new Error(
         'Failed to get session id, you may need to update the SUNO_COOKIE'
       );
     }
     // Save session ID for later use
-    this.sid = sessionResponse.data.response.last_active_session_id;
+    this.sid = sessionId;
   }
 
   /**
@@ -181,6 +192,9 @@ class SunoApi {
    * @param isWait Indicates if the method should wait for the session to be fully renewed before returning.
    */
   public async keepAlive(isWait?: boolean): Promise<void> {
+    if (this.sid === 'direct_jwt_session') {
+      return;
+    }
     if (!this.sid) {
       throw new Error('Session ID is not set. Cannot renew token.');
     }
@@ -891,7 +905,7 @@ class SunoApi {
 }
 
 export const sunoApi = async (cookie?: string) => {
-  const resolvedCookie = cookie && cookie.includes('__client') ? cookie : process.env.SUNO_COOKIE; // Check for bad `Cookie` header (It's too expensive to actually parse the cookies *here*)
+  const resolvedCookie = cookie && (cookie.includes('__client') || cookie.includes('__session')) ? cookie : process.env.SUNO_COOKIE; // Check for bad `Cookie` header (It's too expensive to actually parse the cookies *here*)
   if (!resolvedCookie) {
     logger.info('No cookie provided! Aborting...\nPlease provide a cookie either in the .env file or in the Cookie header of your request.')
     throw new Error('Please provide a cookie either in the .env file or in the Cookie header of your request.');
