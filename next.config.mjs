@@ -10,12 +10,17 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Korrekter Key für Next.js 14.1.4, um das Bündeln der Binärdateien zu verhindern
+  // 'electron' hinzugefügt, um das Bündeln der Binärdateien zu verhindern
   experimental: {
-    serverComponentsExternalPackages: ['rebrowser-playwright-core', 'ghost-cursor-playwright'],
+    serverComponentsExternalPackages: ['electron', 'rebrowser-playwright-core', 'ghost-cursor-playwright'],
   },
 
   webpack: (config, { isServer }) => {
+    // Schließt electron serverseitig aus dem Bundle aus
+    if (isServer) {
+      config.externals.push('electron');
+    }
+
     // Sicherheitsnetz für den Client-Build
     if (!isServer) {
       config.resolve.fallback = {
