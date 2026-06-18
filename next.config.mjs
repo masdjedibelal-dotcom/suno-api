@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   
+  // Ignoriert Linting- und Typenfehler für einen stabilen Build
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -9,24 +10,25 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  // Verhindert, dass Next.js die Binärdateien für Server Components bündelt
   experimental: {
     serverComponentsExternalPackages: ['electron', 'rebrowser-playwright-core', 'ghost-cursor-playwright'],
   },
 
-  webpack: (config, { isServer }) => {
-    // 1. Zwingt Webpack, 'electron' überall durch ein leeres Objekt zu ersetzen
+  webpack: (config, { isServer, webpack }) => {
+    // Erzwingt, dass Webpack electron überall durch ein leeres Modul ersetzt
     config.plugins = config.plugins || [];
-    
-    // Wir nutzen den internen NormalModuleReplacementPlugin von Webpack
-    const webpack = require('webpack');
     config.plugins.push(
       new webpack.NormalModuleReplacementPlugin(
         /^electron$/,
-        'node:path' // Ein harmloses Kern-Modul als Platzhalter, damit es 0 Byte zieht
+        'node:path' // Harmloser Platzhalter, der 0 Byte zieht
       )
     );
 
-    // 2. Sicherheitsnetz für Node-Infrastruktur im Browser (Client)
+    // Erzwingt zusätzlich das Ignorieren auf Modulebene
+    config.externals = [...(config.externals || []), 'electron'];
+
+    // Sicherheitsnetz für den Client-Build
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
