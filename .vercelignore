@@ -1,0 +1,3 @@
+node_modules/.pnpm/electron@*
+node_modules/electron
+.cache/ms-playwright
