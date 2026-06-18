@@ -10,20 +10,19 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // 'electron' hinzugefügt, um das Bündeln der Binärdateien zu verhindern
+  // Verhindert, dass Next.js die Binärdateien für Server Components bündelt
   experimental: {
     serverComponentsExternalPackages: ['electron', 'rebrowser-playwright-core', 'ghost-cursor-playwright'],
   },
 
   webpack: (config, { isServer }) => {
-    // Schließt electron serverseitig aus dem Bundle aus
-    if (isServer) {
-      config.externals.push('electron');
-    }
+    // Erzwingt, dass Webpack electron ignoriert (Sowohl Server als auch Client)
+    config.externals = [...(config.externals || []), 'electron'];
 
     // Sicherheitsnetz für den Client-Build
     if (!isServer) {
       config.resolve.fallback = {
+        ...config.resolve.fallback,
         fs: false,
         path: false,
         crypto: false,
