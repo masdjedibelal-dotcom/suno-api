@@ -19,7 +19,6 @@ const nextConfig = {
       '@sparticuz/chromium',
       'rebrowser-playwright-core'
     ],
-    // Electron darf nicht ins Serverless-Bundle (pnpm: ~262 MB, Limit 250 MB)
     outputFileTracingExcludes: {
       '*': [
         'node_modules/.pnpm/electron@*/**',
