@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Unterdrückt Fehler beim Generieren statischer Seiten während des Builds für API-Routen
+  // Ignoriert Linting- und Typenfehler, damit der Build auf Netlify stabil durchläuft
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -10,12 +10,14 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  // Zwingt Next.js, die Playwright-Bibliotheken NICHT durch Webpack zu jagen
+  experimental: {
+    serverExternalPackages: ['rebrowser-playwright-core', 'ghost-cursor-playwright'],
+  },
+
   webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Verhindert, dass Webpack Module-IDs in Nummern umwandelt
-      config.optimization.moduleIds = 'named';
-    } else {
-      // Verhindert, dass Webpack versucht, Node-Module für den Client zu bündeln
+    // Sicherheitsnetz für den Client-Build (verhindert Bündelungsfehler im Browser)
+    if (!isServer) {
       config.resolve.fallback = {
         fs: false,
         path: false,
@@ -28,6 +30,7 @@ const nextConfig = {
     return config;
   },
   
+  // Gibt das korrekte Format für Serverless-Plattformen vor
   output: 'standalone',
 };
 
