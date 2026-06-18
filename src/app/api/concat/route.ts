@@ -3,9 +3,9 @@ import { cookies } from 'next/headers';
 import { sunoApi } from "@/lib/SunoApi";
 import { corsHeaders } from "@/lib/utils";
 
-// Erzwingt die korrekte Node.js Server-Umgebung auf Netlify
-export const runtime = "nodejs";
+// Erzwingt, dass Next.js diese Route beim Build ignoriert und erst zur Laufzeit auf dem Server ausführt
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   if (req.method === 'POST') {
