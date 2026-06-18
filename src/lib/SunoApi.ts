@@ -7,8 +7,18 @@ import * as cookie from 'cookie';
 import { randomUUID } from 'node:crypto';
 import { Solver } from '@2captcha/captcha-solver';
 import { paramsCoordinates } from '@2captcha/captcha-solver/dist/structs/2captcha';
-import { BrowserContext, Page, Locator, chromium, firefox } from 'rebrowser-playwright-core';
-import { createCursor, Cursor } from 'ghost-cursor-playwright';
+import type { BrowserContext, Page, Locator, BrowserType } from 'rebrowser-playwright-core';
+import type { Cursor } from 'ghost-cursor-playwright';
+
+type PlaywrightModule = typeof import('rebrowser-playwright-core');
+let playwrightModule: PlaywrightModule | undefined;
+
+async function getPlaywright(): Promise<PlaywrightModule> {
+  if (!playwrightModule) {
+    playwrightModule = await import('rebrowser-playwright-core');
+  }
+  return playwrightModule;
+}
 import { promises as fs } from 'fs';
 import path from 'node:path';
 
@@ -240,7 +250,8 @@ class SunoApi {
    * Get the BrowserType from the `BROWSER` environment variable.
    * @returns {BrowserType} chromium, firefox or webkit. Default is chromium
    */
-  private getBrowserType() {
+  private async getBrowserType(): Promise<BrowserType> {
+    const { chromium, firefox } = await getPlaywright();
     const browser = process.env.BROWSER?.toLowerCase();
     switch (browser) {
       case 'firefox':
@@ -253,11 +264,15 @@ class SunoApi {
     }
   }
 
-  /**
-   * Launches a browser with the necessary cookies
-   * @returns {BrowserContext}
-   */
-  private async launchBrowser(): Promise<BrowserContext> {
+  private isServerlessRuntime(): boolean {
+    return Boolean(
+      process.env.VERCEL ||
+      process.env.NETLIFY ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME
+    );
+  }
+
+  private async getBrowserLaunchOptions() {
     const args = [
       '--disable-blink-features=AutomationControlled',
       '--disable-web-security',
@@ -268,15 +283,39 @@ class SunoApi {
       '--disable-extensions',
       '--disable-infobars'
     ];
-    // Check for GPU acceleration, as it is recommended to turn it off for Docker
-    if (yn(process.env.BROWSER_DISABLE_GPU, { default: false }))
-      args.push('--enable-unsafe-swiftshader',
-        '--disable-gpu',
-        '--disable-setuid-sandbox');
-    const browser = await this.getBrowserType().launch({
-      args,
-      headless: yn(process.env.BROWSER_HEADLESS, { default: true })
+    const disableGpu = yn(process.env.BROWSER_DISABLE_GPU, {
+      default: this.isServerlessRuntime()
     });
+    if (disableGpu) {
+      args.push(
+        '--enable-unsafe-swiftshader',
+        '--disable-gpu',
+        '--disable-setuid-sandbox'
+      );
+    }
+    const headless = yn(process.env.BROWSER_HEADLESS, { default: true });
+
+    // Vercel/Netlify/Lambda: leichtgewichtiges Chromium statt vollem Playwright-Binary
+    if (this.isServerlessRuntime()) {
+      const chromiumServerless = (await import('@sparticuz/chromium')).default;
+      const serverlessHeadless = chromiumServerless.headless;
+      return {
+        args: [...chromiumServerless.args, ...args],
+        executablePath: await chromiumServerless.executablePath(),
+        headless: serverlessHeadless === 'shell' ? true : (serverlessHeadless ?? headless)
+      };
+    }
+
+    return { args, headless };
+  }
+
+  /**
+   * Launches a browser with the necessary cookies
+   * @returns {BrowserContext}
+   */
+  private async launchBrowser(): Promise<BrowserContext> {
+    const browserType = await this.getBrowserType();
+    const browser = await browserType.launch(await this.getBrowserLaunchOptions());
     const context = await browser.newContext({ userAgent: this.userAgent, locale: process.env.BROWSER_LOCALE, viewport: null });
     const cookies = [];
     const lax: 'Lax' | 'Strict' | 'None' = 'Lax';
@@ -317,8 +356,10 @@ class SunoApi {
     // await page.locator('.react-aria-GridList').waitFor({ timeout: 60000 });
     await page.waitForResponse('**/api/project/**\\?**', { timeout: 60000 }); // wait for song list API call
 
-    if (this.ghostCursorEnabled)
+    if (this.ghostCursorEnabled) {
+      const { createCursor } = await import('ghost-cursor-playwright');
       this.cursor = await createCursor(page);
+    }
     
     logger.info('Triggering the CAPTCHA');
     try {

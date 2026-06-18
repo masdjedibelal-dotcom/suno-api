@@ -1,11 +1,9 @@
 import { NextResponse, NextRequest } from "next/server";
-import { cookies } from 'next/headers';
+import { cookies } from 'next/headers'
 import { sunoApi } from "@/lib/SunoApi";
 import { corsHeaders } from "@/lib/utils";
 
-// Erzwingt, dass Next.js diese Route beim Build ignoriert und erst zur Laufzeit auf dem Server ausführt
 export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   if (req.method === 'POST') {
@@ -32,7 +30,9 @@ export async function POST(req: NextRequest) {
     } catch (error: any) {
       console.error('Error generating concatenating audio:', error);
       
+      // Handle different types of errors
       if (error.response) {
+        // Axios error with response
         console.error('Response error:', JSON.stringify(error.response.data));
         
         if (error.response.status === 402) {
@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
           }
         });
       } else if (error.request) {
+        // Axios error without response (network error, timeout, etc.)
         console.error('Network error:', error.message);
         return new NextResponse(JSON.stringify({ 
           error: 'Network error: Unable to connect to Suno API. Please check your internet connection and try again.' 
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
           }
         });
       } else {
+        // Other types of errors (timeout, etc.)
         console.error('Other error:', error.message);
         return new NextResponse(JSON.stringify({ 
           error: 'Internal error: ' + (error.message || 'Unknown error occurred') 
