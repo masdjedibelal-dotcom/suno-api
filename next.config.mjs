@@ -13,6 +13,14 @@ const nextConfig = {
   // Verhindert, dass Next.js die Binärdateien für Server Components bündelt
   experimental: {
     serverComponentsExternalPackages: ['electron', 'rebrowser-playwright-core', 'ghost-cursor-playwright'],
+    
+    // HIER NEU: Das wirft Electron beim Vercel-Tracing rigoros raus
+    outputFileTracingExcludes: {
+      '*': [
+        'node_modules/**/electron/**/*',
+        'node_modules/.pnpm/electron@*/**/*',
+      ],
+    },
   },
 
   webpack: (config, { isServer, webpack }) => {
