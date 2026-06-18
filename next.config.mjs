@@ -14,13 +14,22 @@ const nextConfig = {
     return config;
   },
   experimental: {
-    serverMinification: false, // the server minification unfortunately breaks the selector class names
+    serverMinification: false,
     serverComponentsExternalPackages: [
       '@sparticuz/chromium',
-      'rebrowser-playwright-core',
-      '@playwright/browser-chromium'
+      'rebrowser-playwright-core'
     ],
-  },
-};  
+    // Electron darf nicht ins Serverless-Bundle (pnpm: ~262 MB, Limit 250 MB)
+    outputFileTracingExcludes: {
+      '*': [
+        'node_modules/.pnpm/electron@*/**',
+        'node_modules/electron/**',
+        'node_modules/@playwright/browser-chromium/**',
+        'node_modules/.pnpm/@playwright+browser-chromium@*/**',
+        'node_modules/playwright-core/.local-browsers/**'
+      ]
+    }
+  }
+};
 
 export default nextConfig;
