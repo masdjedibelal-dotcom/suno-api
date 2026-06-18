@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Ignoriert Linting- und Typenfehler, damit der Build auf Netlify stabil durchläuft
+  // Ignoriert Linting- und Typenfehler für einen stabilen Netlify-Build
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -34,4 +34,4 @@ const nextConfig = {
   output: 'standalone',
 };
 
-module.exports = nextConfig;
+export default nextConfig;
