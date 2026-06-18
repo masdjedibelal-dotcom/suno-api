@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Ignoriert Linting- und Typenfehler für einen stabilen Netlify-Build
+  // Ignoriert Linting- und Typenfehler für einen stabilen Build
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -10,13 +10,13 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Zwingt Next.js, die Playwright-Bibliotheken NICHT durch Webpack zu jagen
+  // Korrekter Key für Next.js 14.1.4, um das Bündeln der Binärdateien zu verhindern
   experimental: {
-    serverExternalPackages: ['rebrowser-playwright-core', 'ghost-cursor-playwright'],
+    serverComponentsExternalPackages: ['rebrowser-playwright-core', 'ghost-cursor-playwright'],
   },
 
   webpack: (config, { isServer }) => {
-    // Sicherheitsnetz für den Client-Build (verhindert Bündelungsfehler im Browser)
+    // Sicherheitsnetz für den Client-Build
     if (!isServer) {
       config.resolve.fallback = {
         fs: false,
@@ -30,7 +30,6 @@ const nextConfig = {
     return config;
   },
   
-  // Gibt das korrekte Format für Serverless-Plattformen vor
   output: 'standalone',
 };
 
